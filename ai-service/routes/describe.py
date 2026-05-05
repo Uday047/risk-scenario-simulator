@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from services.groq_client import call_groq
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import os
 
@@ -18,8 +18,8 @@ def describe():
     with open(os.path.join(BASE_DIR, "prompts", "describe.txt"), "r") as f:
         prompt_template = f.read()
     prompt = prompt_template.replace("{input}", user_input)
-    prompt = prompt.replace("{generated_at}", datetime.utcnow().isoformat())
-    result = call_groq(prompt, temperature=0.3)
+    prompt = prompt.replace("{generated_at}", datetime.now(timezone.utc).isoformat())
+    result = call_groq(prompt, temperature=0.3, max_tokens=600)
     if result is None:
         return jsonify({"error": "AI service unavailable", "is_fallback": True}), 503
     try:
