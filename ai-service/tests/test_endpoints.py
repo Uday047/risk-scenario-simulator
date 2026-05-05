@@ -208,3 +208,41 @@ def test_query_success(mock_groq, mock_rag, client):
     assert data["total_sources"] == 1
     mock_groq.assert_called_once()
     mock_rag.assert_called_once()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Test 11 — POST /batch-process — valid 2-item batch
+# ══════════════════════════════════════════════════════════════════════════════
+@patch("routes.batch_process.call_groq", return_value=DESCRIBE_MOCK)
+def test_batch_process_success(mock_groq, client):
+    """Valid batch of 2 describe items returns ordered results and 200."""
+    payload = {
+        "items": [
+            {"type": "describe", "input": "A ransomware attack on our cloud infrastructure"},
+            {"type": "describe", "input": "Supply chain disruption affecting key vendors"},
+        ]
+    }
+    res = client.post("/batch-process", json=payload)
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["total"] == 2
+    assert len(data["results"]) == 2
+    assert data["results"][0]["type"] == "describe"
+    assert data["results"][0]["error"] is None
+    assert mock_groq.call_count == 2
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Test 12 — POST /batch-process — exceeds 20-item limit
+# ══════════════════════════════════════════════════════════════════════════════
+def test_batch_process_too_many_items(client):
+    """Sending more than 20 items returns 400."""
+    payload = {
+        "items": [
+            {"type": "describe", "input": "Risk scenario number " + str(i) * 5}
+            for i in range(21)
+        ]
+    }
+    res = client.post("/batch-process", json=payload)
+    assert res.status_code == 400
+    assert "Too many items" in res.get_json()["error"]

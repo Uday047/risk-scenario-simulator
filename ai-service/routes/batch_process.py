@@ -55,11 +55,11 @@ def _process_item(item_type: str, user_input: str) -> dict:
     prompt_template = _load_prompt(config["prompt_file"])
 
     # describe prompt also has {generated_at} — replace with empty for batch
-    from datetime import datetime
+    from datetime import datetime, timezone
     prompt = (
         prompt_template
         .replace("{input}", user_input)
-        .replace("{generated_at}", datetime.utcnow().isoformat())
+        .replace("{generated_at}", datetime.now(timezone.utc).isoformat())
         .replace("{context}", "")      # query prompt — no RAG context in batch
         .replace("{question}", user_input)
     )
